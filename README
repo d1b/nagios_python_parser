@@ -1,5 +1,7 @@
-Nothing to see here(yet).
+This is a small python nagios parser. It is licensed under the gpl v2.
+It is currently in testing and probably has bugs ^^.
 
 TODO:
 	html output
 	XXX: check nagios documentation for output and required status output.
+	make charts
