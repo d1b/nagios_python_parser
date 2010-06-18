@@ -12,4 +12,7 @@ def read_from_a_file(filename, type_r):
 if __name__ == "__main__":
 	data = read_from_a_file("status.dat", "read")
 	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
-	print ''.join(m[0:3])
+	host_names = set([j.replace("\thost_name=","") for i in m for j in i.split("\n") if "host_name" in j])
+	perf_data = set([j.replace("performance_data=","") for i in m for j in re.findall("performance_data=?[^;]*",i) if "\n" not in j ] )
+	print perf_data
+	print host_names
