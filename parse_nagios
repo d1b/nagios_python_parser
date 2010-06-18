@@ -19,6 +19,11 @@ def return_purple(input):
 def return_yellow(input):
 	return "\033[1;33m" + input  + "\033[m"
 
+def return_x(input):
+	return "\033[0;37m" + input  + "\033[m"
+
+def reset_console():
+	print "\033[2J"
 
 def read_from_a_file(filename, type_r):
 	f = open(filename, "r")
@@ -30,29 +35,37 @@ def read_from_a_file(filename, type_r):
 	return data
 
 if __name__ == "__main__":
-	data = read_from_a_file("status.dat", "read")
+	reset_console()
+
+	data = read_from_a_file("/var/cache/nagios3/status.dat", "read")
 	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
 	host_names = [j.replace("\thost_name=","") for i in m for j in i.split("\n") if "\thost_name=" in j]
 	last_check = [j.replace("\tlast_check=","") for i in m for j in i.split("\n") if "\tlast_check=" in j]
 	#perf_data = [j.replace("performance_data=","") for i in m for j in re.findall("performance_data=?[^;]*",i) ]
 	current_state = [j.replace("\tcurrent_state=","") for i in m for j in i.split("\n") if "current_state=" in j]
 	plugin_output = [j.replace("\tplugin_output=","") for i in m for j in i.split("\n") if "\tplugin_output" in j]
-	output = []
+
+	output_g = []
+	output_w = []
+	output_c_u_down = []
+
 	for (i, j, k, current_state) in zip(host_names, plugin_output, last_check, current_state):
-		temp = str(i) + " "+ return_yellow(str(j)) + " "+ return_purple(str(datetime.datetime.fromtimestamp(float(k) ) ))
+		temp = str(i) + " "+ return_x(str(j)) + " "+ return_purple(str(datetime.datetime.fromtimestamp(float(k) ) ))
 		current_state = int(current_state)
 		if current_state == 0: #ok
-			output.append(return_light_green(temp))
+			output_g.append(return_light_green(temp))
 		elif current_state == 1: #warning
-			output.append(return_light_orange(temp))
+			output_w.append(return_yellow(temp))
 		elif current_state == 2: #critical
-			output.append(return_red(temp))
+			output_c_u_down.append(return_red(temp))
 		elif current_state == 3: #down/not reachable - unknown
-			output.append(return_red(temp))
+			output_c_u_down.append(return_red(temp))
 		else:
 			print return_red("THIS SHOULD NOT HAPPEN!")
 			sys.exit(1)
-
-	output.sort()
+	output_g.sort()
+	output_w.sort()
+	output_c_u_down.sort()
+	output = output_g + output_w + output_c_u_down
 	for i in output:
 		print i
