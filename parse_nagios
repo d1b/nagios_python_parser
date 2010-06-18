@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+import re
+def read_from_a_file(filename, type_r):
+	f = open(filename, "r")
+	if type_r == "read":
+		data = f.read()
+	else:
+		data = f.readlines()
+	f.close()
+	return data
+
+if __name__ == "__main__":
+	data = read_from_a_file("status.dat", "read")
+	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
+	print ''.join(m[0:3])
