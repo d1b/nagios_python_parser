@@ -3,6 +3,7 @@ import re
 import time
 import datetime
 import sys
+from optparse import OptionParser
 
 def return_red(input):
 	return "\033[1;31m" + input  + "\033[m"
@@ -19,11 +20,8 @@ def return_purple(input):
 def return_yellow(input):
 	return "\033[1;33m" + input  + "\033[m"
 
-def return_x(input):
-	return "\033[0;37m" + input  + "\033[m"
-
-def reset_console():
-	print "\033[2J"
+def print_separator():
+	print return_purple("-------------------------------")
 
 def read_from_a_file(filename, type_r):
 	f = open(filename, "r")
@@ -34,25 +32,30 @@ def read_from_a_file(filename, type_r):
 	f.close()
 	return data
 
-if __name__ == "__main__":
-	reset_console()
+def get_generic_item_from_match(strip_string, match_string, m):
+	return [j.replace(strip_string, "") for i in m for j in i.split("\n") if match_string in j]
 
-	data = read_from_a_file("/var/cache/nagios3/status.dat", "read")
+def main(data, disacked_display):
+	print_separator()
 	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
-	host_names = [j.replace("\thost_name=","") for i in m for j in i.split("\n") if "\thost_name=" in j]
-	last_check = [j.replace("\tlast_check=","") for i in m for j in i.split("\n") if "\tlast_check=" in j]
 	#perf_data = [j.replace("performance_data=","") for i in m for j in re.findall("performance_data=?[^;]*",i) ]
-	current_state = [j.replace("\tcurrent_state=","") for i in m for j in i.split("\n") if "current_state=" in j]
-	plugin_output = [j.replace("\tplugin_output=","") for i in m for j in i.split("\n") if "\tplugin_output" in j]
+	host_names = get_generic_item_from_match("\thost_name=", "\thost_name=", m)
+	last_check = get_generic_item_from_match("\tlast_check=", "\tlast_check=", m)
+	current_state = get_generic_item_from_match("\tcurrent_state=", "\tcurrent_state=", m)
+	plugin_output = get_generic_item_from_match("\tplugin_output=", "\tplugin_output=", m)
+	acked = get_generic_item_from_match("\tproblem_has_been_acknowledged=", "\tproblem_has_been_acknowledged=", m)
 
 	output_g = []
 	output_w = []
 	output_c_u_down = []
 
-	for (i, j, k, current_state) in zip(host_names, plugin_output, last_check, current_state):
-		temp = str(i) + " "+ str(j) + " "+ str(datetime.datetime.fromtimestamp(float(k) ) )
+	for (host, plugin_out, last_c, current_state, acked) in zip(host_names, plugin_output, last_check, current_state, acked):
+		temp = str(host) + " " + str(plugin_out) + " "+ str(datetime.datetime.fromtimestamp(float(last_c) ) )
 		current_state = int(current_state)
-		if current_state == 0: #ok
+		acked = int(acked)
+		if acked and disacked_display:
+			pass
+		elif current_state == 0: #ok
 			output_g.append(return_light_green(temp))
 		elif current_state == 1: #warning
 			output_w.append(return_yellow(temp))
@@ -63,9 +66,22 @@ if __name__ == "__main__":
 		else:
 			print return_red("THIS SHOULD NOT HAPPEN!")
 			sys.exit(1)
+
 	output_g.sort()
 	output_w.sort()
 	output_c_u_down.sort()
 	output = output_g + output_w + output_c_u_down
 	for i in output:
 		print i
+
+
+if __name__ == "__main__":
+	parser = OptionParser()
+	parser.add_option("-d", "--disacked", action="store_true", dest="disacked_display", help = "do not output acknowledged problems")
+	(options, args) = parser.parse_args()
+
+	if options.disacked_display is None:
+		options.disacked_display = False
+
+	data = read_from_a_file("/var/cache/nagios3/status.dat", "read")
+	main(data, options.disacked_display)
