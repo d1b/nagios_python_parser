@@ -50,7 +50,7 @@ if __name__ == "__main__":
 	output_c_u_down = []
 
 	for (i, j, k, current_state) in zip(host_names, plugin_output, last_check, current_state):
-		temp = str(i) + " "+ return_x(str(j)) + " "+ return_purple(str(datetime.datetime.fromtimestamp(float(k) ) ))
+		temp = str(i) + " "+ str(j) + " "+ str(datetime.datetime.fromtimestamp(float(k) ) )
 		current_state = int(current_state)
 		if current_state == 0: #ok
 			output_g.append(return_light_green(temp))
