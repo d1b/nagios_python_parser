@@ -1,5 +1,25 @@
 #!/usr/bin/env python
 import re
+import time
+import datetime
+import sys
+
+def return_red(input):
+	return "\033[1;31m" + input  + "\033[m"
+
+def return_light_orange(input):
+	return "\033[0;33m" + input  + "\033[m"
+
+def return_light_green(input):
+	return "\033[1;32m" + input  + "\033[m"
+
+def return_purple(input):
+	return "\033[1;35m" + input  + "\033[m"
+
+def return_yellow(input):
+	return "\033[1;33m" + input  + "\033[m"
+
+
 def read_from_a_file(filename, type_r):
 	f = open(filename, "r")
 	if type_r == "read":
@@ -12,7 +32,27 @@ def read_from_a_file(filename, type_r):
 if __name__ == "__main__":
 	data = read_from_a_file("status.dat", "read")
 	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
-	host_names = set([j.replace("\thost_name=","") for i in m for j in i.split("\n") if "host_name" in j])
-	perf_data = set([j.replace("performance_data=","") for i in m for j in re.findall("performance_data=?[^;]*",i) if "\n" not in j ] )
-	print perf_data
-	print host_names
+	host_names = [j.replace("\thost_name=","") for i in m for j in i.split("\n") if "\thost_name=" in j]
+	last_check = [j.replace("\tlast_check=","") for i in m for j in i.split("\n") if "\tlast_check=" in j]
+	#perf_data = [j.replace("performance_data=","") for i in m for j in re.findall("performance_data=?[^;]*",i) ]
+	current_state = [j.replace("\tcurrent_state=","") for i in m for j in i.split("\n") if "current_state=" in j]
+	plugin_output = [j.replace("\tplugin_output=","") for i in m for j in i.split("\n") if "\tplugin_output" in j]
+	output = []
+	for (i, j, k, current_state) in zip(host_names, plugin_output, last_check, current_state):
+		temp = str(i) + " "+ return_yellow(str(j)) + " "+ return_purple(str(datetime.datetime.fromtimestamp(float(k) ) ))
+		current_state = int(current_state)
+		if current_state == 0: #ok
+			output.append(return_light_green(temp))
+		elif current_state == 1: #warning
+			output.append(return_light_orange(temp))
+		elif current_state == 2: #critical
+			output.append(return_red(temp))
+		elif current_state == 3: #down/not reachable - unknown
+			output.append(return_red(temp))
+		else:
+			print return_red("THIS SHOULD NOT HAPPEN!")
+			sys.exit(1)
+
+	output.sort()
+	for i in output:
+		print i
