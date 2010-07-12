@@ -21,7 +21,7 @@ def get_generic_item_from_match(strip_string, match_string, m):
 def create_sql_db(db_name):
 	conn = sqlite3.connect(db_name +".db")
 	cursor = conn.cursor()
-	cursor.execute("""create table data(host text, service text, value text, time datetime)""")
+	cursor.execute("""create table data(host text, service text, value text, time datetime, unique (host, service, value, time))""")
 	conn.commit()
 	cursor.close()
 
