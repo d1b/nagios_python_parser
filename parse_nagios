@@ -25,7 +25,7 @@ def print_separator():
 
 def read_from_a_file(filename, type_r):
 	f = open(filename, "r")
-	if type_r == "read":
+	if type_r is "read":
 		data = f.read()
 	else:
 		data = f.readlines()
@@ -55,13 +55,13 @@ def main(data, disacked_display):
 		acked = int(acked)
 		if acked and disacked_display:
 			pass
-		elif current_state == 0: #ok
+		elif current_state is 0: #ok
 			output_g.append(return_light_green(temp))
-		elif current_state == 1: #warning
+		elif current_state is 1: #warning
 			output_w.append(return_yellow(temp))
-		elif current_state == 2: #critical
+		elif current_state is 2: #critical
 			output_c_u_down.append(return_red(temp))
-		elif current_state == 3: #down/not reachable - unknown
+		elif current_state is 3: #down/not reachable - unknown
 			output_c_u_down.append(return_red(temp))
 		else:
 			print return_red("THIS SHOULD NOT HAPPEN!")
