@@ -21,7 +21,7 @@ def get_generic_item_from_match(strip_string, match_string, m):
 def create_sql_db(db_name):
 	conn = sqlite3.connect(db_name +".db")
 	cursor = conn.cursor()
-	cursor.execute("""create table data(host text, service text, value text, time datetime unique)""")
+	cursor.execute("""create table data(host text, service text, value text, time datetime)""")
 	conn.commit()
 	cursor.close()
 
@@ -44,7 +44,7 @@ def insert_into_db(db_name, host, service, value, time):
 
 
 
-def main(data):
+def main(data, database_name):
 	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
 	host_names = get_generic_item_from_match("\thost_name=", "\thost_name=", m)
 	last_check = get_generic_item_from_match("\tlast_check=", "\tlast_check=", m)
@@ -63,13 +63,14 @@ def main(data):
 	for (host, plugin_out, last_c, current_state, acked, perf_num) in zip(host_names, plugin_output, last_check, current_state, acked, perf_num):
 		#temp = str(host) + " : " + str(plugin_out) + " : "+ str(datetime.datetime.fromtimestamp(float(last_c) ) ) + ":::"+ str( perf_num)
 		#print host, plugin_out.split(" ")[0], perf_num
-		insert_into_db("it", host, plugin_out.split(" ")[0], perf_num, datetime.datetime.fromtimestamp(float(last_c) ) )
+		insert_into_db(database_name, host, plugin_out.split(" ")[0], perf_num, datetime.datetime.fromtimestamp(float(last_c) ) )
 
 if __name__ == "__main__":
+	database_name = "it"
 	try:
-		temp = (query_db("it", "%", "%") )
+		temp = (query_db(database_name, "%", "%") )
 	except Exception, e:
-		create_sql_db("it")
+		create_sql_db(database_name)
 		print e
 	parser = OptionParser()
 	parser.add_option("-o", "--output", action="store_true", dest="display_query_result", help = "output database query result")
@@ -77,4 +78,4 @@ if __name__ == "__main__":
 	if options.display_query_result:
 		print temp
 	data = read_from_a_file("/var/cache/nagios3/status.dat", "read")
-	main(data)
+	main(data, database_name)
