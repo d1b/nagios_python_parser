@@ -10,6 +10,7 @@ def query_db_chartable(db_name, host, service):
 	cursor.close()
 	return result
 
+
 if __name__ =="__main__":
 	database_name = "it"
 	results = query_db_chartable(database_name, "iinet", "HTTP")
@@ -18,7 +19,9 @@ if __name__ =="__main__":
 	chart = pygooglechart.SimpleLineChart(700,400)
 	chart.add_data(counts)
 	chart.set_axis_range(pygooglechart.Axis.LEFT, 0, max(counts))
-	index = chart.set_axis_labels(pygooglechart.Axis.BOTTOM, time_lable)
+	first = time_lable[0]
+	last = time_lable[int(len(time_lable) -1)]
+	index = chart.set_axis_labels(pygooglechart.Axis.BOTTOM, [first, last])
 	chart.set_axis_style(index, "202020", font_size=9, alignment=-1)
 	print chart.get_url()
 
