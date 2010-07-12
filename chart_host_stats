@@ -4,7 +4,7 @@ import sqlite3
 def query_db_chartable(db_name, host, service):
 	conn = sqlite3.connect(db_name +".db")
 	cursor = conn.cursor()
-	sql_statement = """select value, time from data where host like ? and service like ? order by time limit 65"""
+	sql_statement = """select value, time from data where host like ? and service like ? order by time"""
 	cursor.execute(sql_statement, (host, service) )
 	result = cursor.fetchall()
 	cursor.close()
@@ -23,5 +23,6 @@ if __name__ =="__main__":
 	last = time_lable[int(len(time_lable) -1)]
 	index = chart.set_axis_labels(pygooglechart.Axis.BOTTOM, [first, last])
 	chart.set_axis_style(index, "202020", font_size=9, alignment=-1)
+	chart.set_title("iinet - http")
 	print chart.get_url()
 
