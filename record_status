@@ -1,0 +1,80 @@
+#!/usr/bin/env python
+import re
+import time
+import datetime
+import sys
+import sqlite3
+from optparse import OptionParser
+
+def read_from_a_file(filename, type_r):
+	f = open(filename, "r")
+	if type_r is "read":
+		data = f.read()
+	else:
+		data = f.readlines()
+	f.close()
+	return data
+
+def get_generic_item_from_match(strip_string, match_string, m):
+	return [j.replace(strip_string, "") for i in m for j in i.split("\n") if match_string in j]
+
+def create_sql_db(db_name):
+	conn = sqlite3.connect(db_name +".db")
+	cursor = conn.cursor()
+	cursor.execute("""create table data(host text, service text, value text, time datetime unique)""")
+	conn.commit()
+	cursor.close()
+
+def query_db(db_name, host, service):
+	conn = sqlite3.connect(db_name +".db")
+	cursor = conn.cursor()
+	sql_statement = """select host, service, value, time from data where host like ? and service like ?"""
+	cursor.execute(sql_statement, (host, service) )
+	result = cursor.fetchall()
+	cursor.close()
+	return result
+
+def insert_into_db(db_name, host, service, value, time):
+	conn = sqlite3.connect(db_name +".db")
+	cursor = conn.cursor()
+	sql_statement = """insert or ignore into data (host, service, value, time) VALUES (?, ?, ?, ?)"""
+	cursor.execute(sql_statement, (host, service, value, time))
+	conn.commit()
+	cursor.close()
+
+
+
+def main(data):
+	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
+	host_names = get_generic_item_from_match("\thost_name=", "\thost_name=", m)
+	last_check = get_generic_item_from_match("\tlast_check=", "\tlast_check=", m)
+	current_state = get_generic_item_from_match("\tcurrent_state=", "\tcurrent_state=", m)
+	plugin_output = get_generic_item_from_match("\tplugin_output=", "\tplugin_output=", m)
+	acked = get_generic_item_from_match("\tproblem_has_been_acknowledged=", "\tproblem_has_been_acknowledged=", m)
+	perf_data = [j.replace("\tperformance_data=", "").split("\n")[0] for i in m for j in re.findall("\tperformance_data=?[^;]*", i)]
+	perf_num = []
+	for i in perf_data:
+		m = [m.group(0) for m in re.finditer(r"[0-9]?\.?[0-9]+", i)]
+		if len(m) > 0:
+			perf_num.append(m[0])
+		else:
+			perf_num.append("")
+
+	for (host, plugin_out, last_c, current_state, acked, perf_num) in zip(host_names, plugin_output, last_check, current_state, acked, perf_num):
+		#temp = str(host) + " : " + str(plugin_out) + " : "+ str(datetime.datetime.fromtimestamp(float(last_c) ) ) + ":::"+ str( perf_num)
+		#print host, plugin_out.split(" ")[0], perf_num
+		insert_into_db("it", host, plugin_out.split(" ")[0], perf_num, datetime.datetime.fromtimestamp(float(last_c) ) )
+
+if __name__ == "__main__":
+	try:
+		temp = (query_db("it", "%", "%") )
+	except Exception, e:
+		create_sql_db("it")
+		print e
+	parser = OptionParser()
+	parser.add_option("-o", "--output", action="store_true", dest="display_query_result", help = "output database query result")
+	(options, args) = parser.parse_args()
+	if options.display_query_result:
+		print temp
+	data = read_from_a_file("/var/cache/nagios3/status.dat", "read")
+	main(data)
