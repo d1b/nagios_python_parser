@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+import pygooglechart
+import sqlite3
+def query_db_chartable(db_name, host, service):
+	conn = sqlite3.connect(db_name +".db")
+	cursor = conn.cursor()
+	sql_statement = """select value, time from data where host like ? and service like ? order by time limit 65"""
+	cursor.execute(sql_statement, (host, service) )
+	result = cursor.fetchall()
+	cursor.close()
+	return result
+
+if __name__ =="__main__":
+	database_name = "it"
+	results = query_db_chartable(database_name, "iinet", "HTTP")
+	counts = [float(x[0]) for x in results]
+	time_lable = [str(x[1]) for x in results]
+	chart = pygooglechart.SimpleLineChart(700,400)
+	chart.add_data(counts)
+	chart.set_axis_range(pygooglechart.Axis.LEFT, 0, max(counts))
+	index = chart.set_axis_labels(pygooglechart.Axis.BOTTOM, time_lable)
+	chart.set_axis_style(index, "202020", font_size=9, alignment=-1)
+	print chart.get_url()
+
