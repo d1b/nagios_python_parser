@@ -8,7 +8,7 @@ from optparse import OptionParser
 
 def read_from_a_file(filename, type_r):
 	f = open(filename, "r")
-	if type_r is "read":
+	if type_r == "read":
 		data = f.read()
 	else:
 		data = f.readlines()
