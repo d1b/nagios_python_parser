@@ -30,7 +30,7 @@
     hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
     .footer { text-align:center; padding-top:30px; font-style: italic; }
 	</style>
-
+	<script type="text/javascript" src="dygraph-combined.js"></script>
 </head>
 
 <body>
@@ -52,10 +52,25 @@
       parse nagios status.dat using python!
     </div>
 
-</p>
+    <p>
+	two dns servers reponse times - against each other.
+                <div id="example" style="width:1000px; height:500px;"></div>
+                <script type="text/javascript">
+                combodnsmq= new Dygraph(
+		document.getElementById("example"),
+"example.csv", // path to CSV file
+                                {
+					//colors: ['#EE1111', '#0000']// options
+				}
+				);
+                </script>
+
+
       <img border="0" src="http://lh3.ggpht.com/_2ma1gDl6cls/TDrF83Jh0jI/AAAAAAAAAYc/26CaSTC8Y2Q/chart.png">
       <img border="0" src="http://lh3.ggpht.com/_2ma1gDl6cls/TDrJ2qJu01I/AAAAAAAAAYs/wzZlxLj2V60/s912/outputz-1.png">
-</p>
+
+    </p>
+
     <h2>License</h2>
 <p>GPL v2</p>
 <h2>Authors</h2>
