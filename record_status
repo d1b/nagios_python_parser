@@ -42,15 +42,28 @@ def insert_into_db(db_name, host, service, value, time):
 	conn.commit()
 	cursor.close()
 
-
+def get_services(m):
+	""" Returns a list of service descriptions for hosts.
+	    If there isn't one then it will be an empty string
+	    and regarded as the host check for a given host.
+	"""
+	service_desc_list = []
+	states = [state for state in m if "\thost_name=" in state]
+	for i in states:
+		service_desc = ""
+		for line in i.split("\n"):
+			if "\tservice_description" in line:
+				service_desc = line.replace("\tservice_description=", "")
+		service_desc_list.append(service_desc)
+	return service_desc_list
 
 def main(data, database_name):
 	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
 	host_names = get_generic_item_from_match("\thost_name=", "\thost_name=", m)
 	last_check = get_generic_item_from_match("\tlast_check=", "\tlast_check=", m)
 	current_state = get_generic_item_from_match("\tcurrent_state=", "\tcurrent_state=", m)
-	plugin_output = get_generic_item_from_match("\tplugin_output=", "\tplugin_output=", m)
 	acked = get_generic_item_from_match("\tproblem_has_been_acknowledged=", "\tproblem_has_been_acknowledged=", m)
+	services = get_services(m)
 	perf_data = [j.replace("\tperformance_data=", "").split("\n")[0] for i in m for j in re.findall("\tperformance_data=?[^;]*", i)]
 	perf_num = []
 	for i in perf_data:
@@ -60,22 +73,21 @@ def main(data, database_name):
 		else:
 			perf_num.append("")
 
-	for (host, plugin_out, last_c, current_state, acked, perf_num) in zip(host_names, plugin_output, last_check, current_state, acked, perf_num):
-		#temp = str(host) + " : " + str(plugin_out) + " : "+ str(datetime.datetime.fromtimestamp(float(last_c) ) ) + ":::"+ str( perf_num)
-		#print host, plugin_out.split(" ")[0], perf_num
-		insert_into_db(database_name, host, plugin_out.split(" ")[0], perf_num, datetime.datetime.fromtimestamp(float(last_c) ) )
+	for (host, service, last_c, current_state, acked, perf_num) in zip(host_names, services, last_check, current_state, acked, perf_num):
+		#temp = str(host) + " : " + str(service) + " : "+ str(datetime.datetime.fromtimestamp(float(last_c) ) ) + ":::"+ str( perf_num)
+		#print host, service, perf_num
+		insert_into_db(database_name, host, service, perf_num, datetime.datetime.fromtimestamp(float(last_c) ) )
 
 if __name__ == "__main__":
 	database_name = "it"
 	try:
-		temp = (query_db(database_name, "%", "%") )
-	except Exception, e:
 		create_sql_db(database_name)
-		print e
+	except sqlite3.OperationalError, e:
+		pass
 	parser = OptionParser()
 	parser.add_option("-o", "--output", action="store_true", dest="display_query_result", help = "output database query result")
 	(options, args) = parser.parse_args()
 	if options.display_query_result:
-		print temp
+		print query_db(database_name, "%", "%")
 	data = read_from_a_file("/var/cache/nagios3/status.dat", "read")
 	main(data, database_name)
