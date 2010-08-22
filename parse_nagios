@@ -37,7 +37,7 @@ def get_generic_item_from_match(strip_string, match_string, m):
 
 def main(data, disacked_display):
 	print_separator()
-	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
+	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data) if "last_check" in m.group(1)]
 	#perf_data = [j.replace("performance_data=","") for i in m for j in re.findall("performance_data=?[^;]*",i) ]
 	host_names = get_generic_item_from_match("\thost_name=", "\thost_name=", m)
 	last_check = get_generic_item_from_match("\tlast_check=", "\tlast_check=", m)
@@ -48,6 +48,8 @@ def main(data, disacked_display):
 	output_g = []
 	output_w = []
 	output_c_u_down = []
+
+	assert len (host_names) == len(last_check), "the number of hosts in the nagios status file should equal the number of last_check in the file."
 
 	for (host, plugin_out, last_c, current_state, acked) in zip(host_names, plugin_output, last_check, current_state, acked):
 		temp = str(host) + " " + str(plugin_out) + " "+ str(datetime.datetime.fromtimestamp(float(last_c) ) )
