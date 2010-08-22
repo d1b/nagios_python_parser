@@ -2,7 +2,7 @@
 import pygooglechart
 import sqlite3
 def query_db_chartable(db_name, host, service):
-	conn = sqlite3.connect(db_name +".db")
+	conn = sqlite3.connect(db_name)
 	cursor = conn.cursor()
 	sql_statement = """select value, time from data where host like ? and service like ? order by time"""
 	cursor.execute(sql_statement, (host, service) )
@@ -12,7 +12,7 @@ def query_db_chartable(db_name, host, service):
 
 
 if __name__ =="__main__":
-	database_name = "it"
+	database_name = "it.db"
 	results = query_db_chartable(database_name, "iinet", "HTTP")
 	counts = [float(x[0]) for x in results]
 	time_lable = [str(x[1]) for x in results]
