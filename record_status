@@ -19,14 +19,14 @@ def get_generic_item_from_match(strip_string, match_string, m):
 	return [j.replace(strip_string, "") for i in m for j in i.split("\n") if match_string in j]
 
 def create_sql_db(db_name):
-	conn = sqlite3.connect(db_name +".db")
+	conn = sqlite3.connect(db_name)
 	cursor = conn.cursor()
 	cursor.execute("""create table data(host text, service text, value text, time datetime, unique (host, service, value, time))""")
 	conn.commit()
 	cursor.close()
 
 def query_db(db_name, host, service):
-	conn = sqlite3.connect(db_name +".db")
+	conn = sqlite3.connect(db_name)
 	cursor = conn.cursor()
 	sql_statement = """select host, service, value, time from data where host like ? and service like ?"""
 	cursor.execute(sql_statement, (host, service) )
@@ -34,11 +34,13 @@ def query_db(db_name, host, service):
 	cursor.close()
 	return result
 
-def insert_into_db(db_name, host, service, value, time):
-	conn = sqlite3.connect(db_name +".db")
+def insert_into_db(db_name, data):
+	conn = sqlite3.connect(db_name)
 	cursor = conn.cursor()
 	sql_statement = """insert or ignore into data (host, service, value, time) VALUES (?, ?, ?, ?)"""
-	cursor.execute(sql_statement, (host, service, value, time))
+	for (host, service, perf_num, last_c) in data:
+		time =  datetime.datetime.fromtimestamp(float(last_c))
+		cursor.execute(sql_statement, (host, service, perf_num, time))
 	conn.commit()
 	cursor.close()
 
@@ -58,7 +60,7 @@ def get_services(m):
 	return service_desc_list
 
 def main(data, database_name):
-	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data)]
+	m = [m.group(1) for m in re.finditer(r"[^{]*\{([^}]+)\}", data) if "last_check" in m.group(1)]
 	host_names = get_generic_item_from_match("\thost_name=", "\thost_name=", m)
 	last_check = get_generic_item_from_match("\tlast_check=", "\tlast_check=", m)
 	current_state = get_generic_item_from_match("\tcurrent_state=", "\tcurrent_state=", m)
@@ -71,15 +73,13 @@ def main(data, database_name):
 		if len(m) > 0:
 			perf_num.append(m[0])
 		else:
-			perf_num.append("")
+			perf_num.append("-1")
 
-	for (host, service, last_c, current_state, acked, perf_num) in zip(host_names, services, last_check, current_state, acked, perf_num):
-		#temp = str(host) + " : " + str(service) + " : "+ str(datetime.datetime.fromtimestamp(float(last_c) ) ) + ":::"+ str( perf_num)
-		#print host, service, perf_num
-		insert_into_db(database_name, host, service, perf_num, datetime.datetime.fromtimestamp(float(last_c) ) )
+	assert len (services) == len(last_check), "the number of services listed should equal the number of last_check entries"
+	insert_into_db(database_name, zip(host_names, services, perf_num, last_check))
 
 if __name__ == "__main__":
-	database_name = "it"
+	database_name = "tempit.db"
 	try:
 		create_sql_db(database_name)
 	except sqlite3.OperationalError, e:
@@ -91,3 +91,4 @@ if __name__ == "__main__":
 		print query_db(database_name, "%", "%")
 	data = read_from_a_file("/var/cache/nagios3/status.dat", "read")
 	main(data, database_name)
+
